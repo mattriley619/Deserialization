@@ -1,4 +1,7 @@
 import java.io.*;
+import java.nio.file.*;
+import java.security.*;
+
 public class Deserialization
 {
     public static void main(String args[])
@@ -12,26 +15,57 @@ public class Deserialization
         //Here is how you serialize to store or transfer the object
         String file = "example.ser";
 
-//        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file)))
-//        {
-//            out.writeObject(user);
-//        }
-//        catch (IOException e)
-//        {
-//            e.printStackTrace();
-//        }
 
-        //Here is how you deserialize back to an object
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file)))
+        // write to file
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file)))
         {
-            User u = (User) in.readObject();
-            System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+            out.writeObject(user);
+        } catch (IOException e)
+        {
+            e.printStackTrace();
         }
-        catch (IOException | ClassNotFoundException e)
+
+        // create and store hash
+        try
+        {
+            byte[] hash = computeSHA256(file);
+            Files.write(Paths.get("example.sha256"), hash);
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+
+        try
+        {
+            byte[] currentHash = computeSHA256(file);
+            byte[] originalHash = Files.readAllBytes(Paths.get("example.sha256"));
+
+            if (!MessageDigest.isEqual(currentHash, originalHash))
+            {
+                throw new SecurityException("Hash mismatch. File has been tampered with.");
+            }
+
+            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file)))
+            {
+                User u = (User) in.readObject();
+                System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+            }
+
+        } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException e)
         {
             e.printStackTrace();
         }
     }
+
+    public static byte[] computeSHA256(String filePath) throws IOException, NoSuchAlgorithmException
+    {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] fileBytes = Files.readAllBytes(Paths.get(filePath));
+
+        return digest.digest(fileBytes);
+    }
+
 }
 
 class User implements Serializable
