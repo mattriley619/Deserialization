@@ -6,99 +6,103 @@ public class Deserialization
 {
     public static void main(String args[])
     {
+        String userFile = "user.ser";
+        String verifierFile = "verifier.ser";
+
         User user = new User();
         user.setAge(40);
         user.setBald(true);
         user.setHeight(6.1);
         user.setName("John", "Lee", "Smith");
 
-        //Here is how you serialize to store or transfer the object
-        String file = "example.ser";
+        Verifier verifier = new Verifier();
 
+        // Serialization -------------------------------------------------------------------------
 
-        // write to file
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file)))
+        try (ObjectOutputStream out1 = new ObjectOutputStream(new FileOutputStream(userFile)))
         {
-            out.writeObject(user);
-        } catch (IOException e)
+            out1.writeObject(user);
+
+            byte[] hash = computeSHA256(userFile);
+            verifier.setUserHash(hash);
+
+            try (ObjectOutputStream out2 = new ObjectOutputStream(new FileOutputStream(verifierFile))) {
+                out2.writeObject(verifier);
+            }
+        }
+        catch (Exception e)
         {
             e.printStackTrace();
         }
+        // Deserialization --------------------------------------------------------------------------
 
-        // create and store hash
-        try
+        try (ObjectInputStream inVerifier = new ObjectInputStream(new FileInputStream(verifierFile));
+             ObjectInputStream inUser = new ObjectInputStream(new FileInputStream(userFile)))
         {
-            byte[] hash = computeSHA256(file);
-            Files.write(Paths.get("example.sha256"), hash);
-        } catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+            verifier = (Verifier) inVerifier.readObject();
+            User u = (User) inUser.readObject();
 
+            System.out.println("Verifier UUID: " + verifier.getUUID());
 
-        try
-        {
-            byte[] currentHash = computeSHA256(file);
-            byte[] originalHash = Files.readAllBytes(Paths.get("example.sha256"));
-
-            if (!MessageDigest.isEqual(currentHash, originalHash))
-            {
-                throw new SecurityException("Hash mismatch. File has been tampered with.");
+            if (verifier.getUUID() == null) {
+                throw new SecurityException("File tampered with. Invalid UUID.");
             }
 
-            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file)))
-            {
-                User u = (User) in.readObject();
-                System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+            byte[] currentHash = computeSHA256(userFile);
+
+            if (!MessageDigest.isEqual(currentHash, verifier.getUserHash())) {
+                throw new SecurityException("File tampered with. Hash mismatch.");
             }
 
-        } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException e)
-        {
+            System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
+
+
     }
 
-    public static byte[] computeSHA256(String filePath) throws IOException, NoSuchAlgorithmException
-    {
+    public static byte[] computeSHA256(String filePath) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] fileBytes = Files.readAllBytes(Paths.get(filePath));
-
         return digest.digest(fileBytes);
     }
 
+
+    static class User implements Serializable
+    {
+        private static final long serialVersionUID = 1L;
+        String[] name;
+        String birthday;
+        String address;
+        int age;
+        double height;
+        boolean isBald;
+
+        void setName(String first, String middle, String last)
+        {
+            name = new String[3];
+            name[0] = first;
+            name[1] = middle;
+            name[2] = last;
+        }
+
+        void setAge(int x)
+        {
+            age = x;
+        }
+
+        void setHeight(double x)
+        {
+            height = x;
+        }
+
+        void setBald(boolean x)
+        {
+            isBald = x;
+        }
+    }
 }
 
-class User implements Serializable
-{
-    String[] name;
-    String birthday;
-    String address;
-    int age;
-    double height;
-    boolean isBald;
-
-    void setName(String first, String middle, String last)
-    {
-        name = new String[3];
-        name[0] = first;
-        name[1] = middle;
-        name[2] = last;
-    }
-
-    void setAge(int x)
-    {
-        age = x;
-    }
-
-    void setHeight(double x)
-    {
-        height = x;
-    }
-
-    void setBald(boolean x)
-    {
-        isBald = x;
-    }
-
-
-}
