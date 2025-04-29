@@ -6,3 +6,5 @@ To use:
   2. Comment out the serialization so it doesn't overwrite. (lines 22 - 36)
   3. Using a hex-editor, make some changes to the field values.
   4. Run the program again and you should see a hash mismatch error.
+
+  5. UPDATE - Probably doesn't work becaue GitHub won't allow multiple files being named the same thing, which is necessary to modify the class.
