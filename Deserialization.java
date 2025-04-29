@@ -23,8 +23,8 @@ public class Deserialization
         {
             out1.writeObject(user);
 
-            byte[] hash = computeSHA256(userFile);
-            verifier.setUserHash(hash);
+//            byte[] hash = computeSHA256(userFile);
+//            verifier.setUserHash(hash);
 
             try (ObjectOutputStream out2 = new ObjectOutputStream(new FileOutputStream(verifierFile))) {
                 out2.writeObject(verifier);
@@ -48,13 +48,14 @@ public class Deserialization
                 throw new SecurityException("File tampered with. Invalid UUID.");
             }
 
-            byte[] currentHash = computeSHA256(userFile);
+//            byte[] currentHash = computeSHA256(userFile);
+//
+//            if (!MessageDigest.isEqual(currentHash, verifier.getUserHash())) {
+//                throw new SecurityException("File tampered with. Hash mismatch.");
+//            }
 
-            if (!MessageDigest.isEqual(currentHash, verifier.getUserHash())) {
-                throw new SecurityException("File tampered with. Hash mismatch.");
-            }
-
-            System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+           // System.out.println(u.name[0] + " " + u.name[1] + " " + u.name[2] + " " + u.isBald + "\n");
+            System.out.println(user.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -105,4 +106,3 @@ public class Deserialization
         }
     }
 }
-
